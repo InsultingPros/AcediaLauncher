@@ -1,6 +1,5 @@
 /**
- *      A helper class for 'FixAmmoSelling' that sets ammo cost for M32 to that
- *  of a level 6 player and doesn't allow for a perk discount.
+ *  This actor's role is to add Acedia mutator on listen and dedicated servers.
  *      Copyright 2019 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
@@ -18,9 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
-class FixAmmoSellingClass_M32Pickup extends M32Pickup;
+
+class StartUp extends Actor;
+
+function PreBeginPlay()
+{
+	super.PreBeginPlay();
+    if (level != none && level.game != none)
+    {
+        level.game.AddMutator(string(class'Packages'));
+    }
+    Destroy();
+}
 
 defaultproperties
 {
-    AmmoCost = 42
+    //  This is a server-only actor
+    remoteRole = ROLE_None
 }

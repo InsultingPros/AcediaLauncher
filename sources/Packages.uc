@@ -1,6 +1,7 @@
 /**
- *  Main and only Acedia mutator used for loading Acedia packages
+ *      Main and only Acedia mutator used for loading Acedia packages
  *  and providing access to mutator events' calls.
+ *      Name is chosen to make config files more readable.
  *      Copyright 2020 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
@@ -18,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
-class Acedia extends Mutator
+class Packages extends Mutator
     config(Acedia);
 
 //      Default value of this variable will be used to store
@@ -26,15 +27,22 @@ class Acedia extends Mutator
 //  as well as to ensure there's only one copy of it.
 //      We can't use 'Singleton' class for that,
 //  as we have to derive from 'Mutator'.
-var private Acedia selfReference;
+var private Packages selfReference;
+
+//  Acedia's reference to a `Global` object.
+var private Global _;
+
+//  Package's manifest is supposed to always have a name of
+//  "<package_name>.Manifest", this variable stores the ".Manifest" part
+var private const string manifestSuffix;
 
 //  Array of predefined services that must be started along with Acedia mutator.
-var private config array< class<Manifest> > registeredManifests;
+var private config array<string> package;
 
-//  Array of predefined services that must be started along with Acedia mutator.
-var private array< class<Service> > systemServices;
+//  AcediaCore package that this launcher is build for
+var private config const string corePackage;
 
-static public final function Acedia GetInstance()
+static public final function Packages GetInstance()
 {
     return default.selfReference;
 }
@@ -56,11 +64,33 @@ event PreBeginPlay()
 
 private final function BootUp()
 {
-    local int i;
-    Spawn(class'Global');
-    for (i = 0; i < registeredManifests.length; i += 1) {
-        LoadManifest(registeredManifests[i]);
+    local int               i;
+    local class<_manifest>  nextManifest;
+    _ = Spawn(class'Global');
+    //  Load core
+    nextManifest = LoadManifestClass(corePackage);
+    if (nextManifest == none)
+    {
+        _.logger.Fatal("Cannot load required AcediaCore package \""
+            $ corePackage $ "\". Acedia will shut down.");
+        Destroy();
+        return;
     }
+    LoadManifest(nextManifest);
+    //  Load packages
+    for (i = 0; i < package.length; i += 1)
+    {
+        nextManifest = LoadManifestClass(package[i]);
+        if (nextManifest == none)
+        {
+            _.logger.Failure("Cannot load `Manifest` for package \""
+                $ package[i] $ "\". Check if it's missing or"
+                @ "if it's name is spelled incorrectly.");
+            continue;
+        }
+        LoadManifest(nextManifest);
+    }
+    //  Inject broadcast handler
     InjectBroadcastHandler();   //  TODO: move this to 'SideEffect' mechanic
 }
 
@@ -75,10 +105,24 @@ private final function RunStartUpTests()
     if (testService.filterTestsByGroup) {
         testService.FilterByName(testService.requiredGroup);
     }
-    testService.Run();
+    if (testService.Run())
+    {
+        //  This listener will output test results into server's console
+        class'TestingListener_AcediaLauncher'.static.SetActive(true);
+    }
+    else
+    {
+        _.logger.Failure("Could not launch Acedia's start up testing process.");
+    }
 }
 
-private final function LoadManifest(class<Manifest> manifestClass)
+private final function class<_manifest> LoadManifestClass(string packageName)
+{
+    return class<_manifest>(DynamicLoadObject(  packageName $ manifestSuffix,
+                                                class'Class', true));
+}
+
+private final function LoadManifest(class<_manifest> manifestClass)
 {
     local int i;
     //  Load alias sources
@@ -140,13 +184,13 @@ function Mutate(string command, PlayerController sendingController)
 
 defaultproperties
 {
-    //  Add Acedia's own manifest
-    registeredManifests(0) = class'Manifest'
+    corePackage     = "AcediaCore_0_2"
+    manifestSuffix  = ".Manifest"
     //  This is a server-only mutator
     remoteRole      = ROLE_None
     bAlwaysRelevant = true
     //  Mutator description
-    GroupName       = "Core mutator"
-    FriendlyName    = "Acedia"
-    Description     = "Launcher for Acedia modules"
+    GroupName       = "Package loader"
+    FriendlyName    = "Acedia loader"
+    Description     = "Launcher for Acedia packages"
 }

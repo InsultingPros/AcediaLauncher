@@ -1,6 +1,6 @@
 /**
- *      Overloaded mutator events listener to catch when pistol-type weapons
- *  (single or dual) are spawned and to correct their price.
+ *  Overloaded testing events listener to catch when tests that we run during
+ *  server loading finish.
  *      Copyright 2020 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
@@ -18,26 +18,28 @@
  * You should have received a copy of the GNU General Public License
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
-class MutatorListener_FixDualiesCost extends MutatorListenerBase
+class TestingListener_AcediaLauncher extends TestingListenerBase
     abstract;
 
-static function bool CheckReplacement(Actor other, out byte isSuperRelevant)
+static function TestingEnded(
+    array< class<TestCase> >    testQueue,
+    array<TestCaseSummary>      results)
 {
-    local KFWeapon          weapon;
-    local FixDualiesCost    dualiesCostFix;
-    weapon = KFWeapon(other);
-    if (weapon == none)         return true;
-    dualiesCostFix = FixDualiesCost(class'FixDualiesCost'.static.GetInstance());
-    if (dualiesCostFix == none) return true;
-
-    dualiesCostFix.RegisterSinglePistol(weapon, true);
-    dualiesCostFix.FixCostAfterThrow(weapon);
-    dualiesCostFix.FixCostAfterBuying(weapon);
-    dualiesCostFix.FixCostAfterPickUp(weapon);
-    return true;
+    local int           i;
+    local string        nextLine;
+    local array<string> textSummary;
+    textSummary = class'TestCaseSummary'.static.GenerateStringSummary(results);
+    for (i = 0; i < textSummary.length; i += 1)
+    {
+        nextLine = _().text.ConvertString(  textSummary[i],
+                                            STRING_Formatted, STRING_Plain);
+        Log(nextLine);
+    }
+    //  No longer need to listen to testing events
+    SetActive(false);
 }
 
 defaultproperties
 {
-    relatedEvents = class'MutatorEvents'
+    relatedEvents = class'TestingEvents'
 }
