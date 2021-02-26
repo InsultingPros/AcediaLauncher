@@ -66,8 +66,9 @@ private final function BootUp()
 {
     local int               i;
     local class<_manifest>  nextManifest;
-    _ = Spawn(class'Global');
     //  Load core
+    Spawn(class'CoreService');
+    _ = class'Global'.static.GetInstance();
     nextManifest = LoadManifestClass(corePackage);
     if (nextManifest == none)
     {
@@ -91,7 +92,7 @@ private final function BootUp()
         LoadManifest(nextManifest);
     }
     //  Inject broadcast handler
-    InjectBroadcastHandler();   //  TODO: move this to 'SideEffect' mechanic
+    InjectBroadcastHandler();
 }
 
 private final function RunStartUpTests()
@@ -103,7 +104,7 @@ private final function RunStartUpTests()
         testService.FilterByName(testService.requiredName);
     }
     if (testService.filterTestsByGroup) {
-        testService.FilterByName(testService.requiredGroup);
+        testService.FilterByGroup(testService.requiredGroup);
     }
     if (testService.Run())
     {
@@ -125,21 +126,16 @@ private final function class<_manifest> LoadManifestClass(string packageName)
 private final function LoadManifest(class<_manifest> manifestClass)
 {
     local int i;
-    //  Load alias sources
     for (i = 0; i < manifestClass.default.aliasSources.length; i += 1)
     {
         if (manifestClass.default.aliasSources[i] == none) continue;
-        Spawn(manifestClass.default.aliasSources[i]);
+        //Spawn(manifestClass.default.aliasSources[i]);
+        _.memory.Allocate(manifestClass.default.aliasSources[i]);
     }
-    //  Enable features
-    for (i = 0; i < manifestClass.default.features.length; i += 1)
-    {
-        if (manifestClass.default.features[i] == none) continue;
-        if (manifestClass.default.features[i].static.IsAutoEnabled()) {
-            manifestClass.default.features[i].static.EnableMe();
-        }
+    LaunchServicesAndFeatures(manifestClass);
+    if (class'Commands'.static.IsEnabled()) {
+        RegisterCommands(manifestClass);
     }
-    //  Load tests cases
     for (i = 0; i < manifestClass.default.testCases.length; i += 1)
     {
         class'TestingService'.static
@@ -147,18 +143,69 @@ private final function LoadManifest(class<_manifest> manifestClass)
     }
 }
 
+private final function RegisterCommands(class<_manifest> manifestClass)
+{
+    local int       i;
+    local Commands  commandsFeature;
+    commandsFeature = Commands(class'Commands'.static.GetInstance());
+    for (i = 0; i < manifestClass.default.commands.length; i += 1)
+    {
+        if (manifestClass.default.commands[i] == none) continue;
+        commandsFeature.RegisterCommand(manifestClass.default.commands[i]);
+    }
+}
+
+private final function LaunchServicesAndFeatures(class<_manifest> manifestClass)
+{
+    local int   i;
+    local bool  packageFeaturesAreUsed;
+    for (i = 0; i < manifestClass.default.features.length; i += 1)
+    {
+        if (manifestClass.default.features[i] == none) continue;
+        if (manifestClass.default.features[i].static.IsAutoEnabled())
+        {
+            packageFeaturesAreUsed = true;
+            break;
+        }
+    }
+    //  Services
+    for (i = 0; i < manifestClass.default.services.length; i += 1)
+    {
+        if (manifestClass.default.services[i] == none) continue;
+        manifestClass.default.services[i].static.Require();
+    }
+    //  Features
+    for (i = 0; i < manifestClass.default.features.length; i += 1)
+    {
+        if (manifestClass.default.features[i] == none) continue;
+        if (manifestClass.default.features[i].static.IsAutoEnabled()) {
+            manifestClass.default.features[i].static.EnableMe();
+        }
+    }
+}
+
 private final function InjectBroadcastHandler()
 {
-    local BroadcastHandler ourBroadcastHandler;
-    if (level == none || level.game == none) return;
+    local BroadcastEventsObserver                   ourBroadcastHandler;
+    local BroadcastEventsObserver.InjectionLevel    injectionLevel;
+    injectionLevel = class'BroadcastEventsObserver'.default.usedInjectionLevel;
+    if (level == none || level.game == none)    return;
+    if (injectionLevel == BHIJ_None)            return;
 
-    ourBroadcastHandler = Spawn(class'BroadcastHandler');
+    ourBroadcastHandler = Spawn(class'BroadcastEventsObserver');
+    if (injectionLevel == BHIJ_Registered)
+    {
+        level.game.broadcastHandler
+            .RegisterBroadcastHandler(ourBroadcastHandler);
+        return;
+    }
+    //      Here `injectionLevel == BHIJ_Root` holds.
     //      Swap out level's first handler with ours
     //  (needs to be done for both actor reference and it's class)
     ourBroadcastHandler.nextBroadcastHandler = level.game.broadcastHandler;
     ourBroadcastHandler.nextBroadcastHandlerClass = level.game.broadcastClass;
     level.game.broadcastHandler = ourBroadcastHandler;
-    level.game.broadcastClass = class'BroadcastHandler';
+    level.game.broadcastClass   = class'BroadcastEventsObserver';
 }
 
 //  Acedia is only able to run in a server mode right now,

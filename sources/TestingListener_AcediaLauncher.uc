@@ -26,14 +26,15 @@ static function TestingEnded(
     array<TestCaseSummary>      results)
 {
     local int           i;
-    local string        nextLine;
+    local MutableText   nextLine;
     local array<string> textSummary;
+    nextLine = __().text.Empty();
     textSummary = class'TestCaseSummary'.static.GenerateStringSummary(results);
     for (i = 0; i < textSummary.length; i += 1)
     {
-        nextLine = _().text.ConvertString(  textSummary[i],
-                                            STRING_Formatted, STRING_Plain);
-        Log(nextLine);
+        nextLine.Clear();
+        nextLine.AppendFormattedString(textSummary[i]);
+        Log(nextLine.ToPlainString());
     }
     //  No longer need to listen to testing events
     SetActive(false);
