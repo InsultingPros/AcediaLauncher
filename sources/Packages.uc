@@ -72,8 +72,8 @@ private final function BootUp()
     nextManifest = LoadManifestClass(corePackage);
     if (nextManifest == none)
     {
-        _.logger.Fatal("Cannot load required AcediaCore package \""
-            $ corePackage $ "\". Acedia will shut down.");
+        /*_.logger.Fatal("Cannot load required AcediaCore package \""
+            $ corePackage $ "\". Acedia will shut down.");*/
         Destroy();
         return;
     }
@@ -84,9 +84,9 @@ private final function BootUp()
         nextManifest = LoadManifestClass(package[i]);
         if (nextManifest == none)
         {
-            _.logger.Failure("Cannot load `Manifest` for package \""
+            /*_.logger.Failure("Cannot load `Manifest` for package \""
                 $ package[i] $ "\". Check if it's missing or"
-                @ "if it's name is spelled incorrectly.");
+                @ "if it's name is spelled incorrectly.");*/
             continue;
         }
         LoadManifest(nextManifest);
@@ -113,7 +113,7 @@ private final function RunStartUpTests()
     }
     else
     {
-        _.logger.Failure("Could not launch Acedia's start up testing process.");
+        //_.logger.Failure("Could not launch Acedia's start up testing process.");
     }
 }
 
