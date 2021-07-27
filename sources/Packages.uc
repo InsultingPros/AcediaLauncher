@@ -133,7 +133,7 @@ private final function LoadManifest(class<_manifest> manifestClass)
         _.memory.Allocate(manifestClass.default.aliasSources[i]);
     }
     LaunchServicesAndFeatures(manifestClass);
-    if (class'Commands'.static.IsEnabled()) {
+    if (class'Commands_Feature'.static.IsEnabled()) {
         RegisterCommands(manifestClass);
     }
     for (i = 0; i < manifestClass.default.testCases.length; i += 1)
@@ -145,9 +145,10 @@ private final function LoadManifest(class<_manifest> manifestClass)
 
 private final function RegisterCommands(class<_manifest> manifestClass)
 {
-    local int       i;
-    local Commands  commandsFeature;
-    commandsFeature = Commands(class'Commands'.static.GetInstance());
+    local int               i;
+    local Commands_Feature  commandsFeature;
+    commandsFeature =
+        Commands_Feature(class'Commands_Feature'.static.GetInstance());
     for (i = 0; i < manifestClass.default.commands.length; i += 1)
     {
         if (manifestClass.default.commands[i] == none) continue;
@@ -158,16 +159,7 @@ private final function RegisterCommands(class<_manifest> manifestClass)
 private final function LaunchServicesAndFeatures(class<_manifest> manifestClass)
 {
     local int   i;
-    local bool  packageFeaturesAreUsed;
-    for (i = 0; i < manifestClass.default.features.length; i += 1)
-    {
-        if (manifestClass.default.features[i] == none) continue;
-        if (manifestClass.default.features[i].static.IsAutoEnabled())
-        {
-            packageFeaturesAreUsed = true;
-            break;
-        }
-    }
+    local Text  autoConfigName;
     //  Services
     for (i = 0; i < manifestClass.default.services.length; i += 1)
     {
@@ -178,9 +170,13 @@ private final function LaunchServicesAndFeatures(class<_manifest> manifestClass)
     for (i = 0; i < manifestClass.default.features.length; i += 1)
     {
         if (manifestClass.default.features[i] == none) continue;
-        if (manifestClass.default.features[i].static.IsAutoEnabled()) {
-            manifestClass.default.features[i].static.EnableMe();
+        manifestClass.default.features[i].static.StaticConstructor();
+        autoConfigName =
+            manifestClass.default.features[i].static.GetAutoEnabledConfig();
+        if (autoConfigName != none) {
+            manifestClass.default.features[i].static.EnableMe(autoConfigName);
         }
+        _.memory.Free(autoConfigName);
     }
 }
 
