@@ -170,7 +170,7 @@ private final function LaunchServicesAndFeatures(class<_manifest> manifestClass)
     for (i = 0; i < manifestClass.default.features.length; i += 1)
     {
         if (manifestClass.default.features[i] == none) continue;
-        manifestClass.default.features[i].static.StaticConstructor();
+        manifestClass.default.features[i].static.LoadConfigs();
         autoConfigName =
             manifestClass.default.features[i].static.GetAutoEnabledConfig();
         if (autoConfigName != none) {
