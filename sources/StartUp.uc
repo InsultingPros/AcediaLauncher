@@ -23,8 +23,7 @@ class StartUp extends Actor;
 function PreBeginPlay()
 {
 	super.PreBeginPlay();
-    if (level != none && level.game != none)
-    {
+    if (level != none && level.game != none) {
         level.game.AddMutator(string(class'Packages'));
     }
     Destroy();

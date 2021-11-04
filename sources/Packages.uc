@@ -2,7 +2,7 @@
  *      Main and only Acedia mutator used for loading Acedia packages
  *  and providing access to mutator events' calls.
  *      Name is chosen to make config files more readable.
- *      Copyright 2020 Anton Tarasenko
+ *      Copyright 2020-2021 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
@@ -20,6 +20,7 @@
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
 class Packages extends Mutator
+    dependson(CoreService)
     config(Acedia);
 
 //      Default value of this variable will be used to store
@@ -32,23 +33,29 @@ var private Packages selfReference;
 //  Acedia's reference to a `Global` object.
 var private Global _;
 
-//  Package's manifest is supposed to always have a name of
-//  "<package_name>.Manifest", this variable stores the ".Manifest" part
-var private const string manifestSuffix;
-
 //  Array of predefined services that must be started along with Acedia mutator.
 var private config array<string> package;
+//  Set to `true` to activate Acedia's game modes system
+var private config bool     useGameModes;
+//  Responsible for setting up Acedia's game modes in current voting system
+var VotingHandlerAdapter    votingAdapter;
 
-//  AcediaCore package that this launcher is build for
-var private config const string corePackage;
+var Mutator_OnMutate_Signal             onMutateSignal;
+var Mutator_OnCheckReplacement_Signal   onCheckReplacementSignal;
+
+var private LoggerAPI.Definition infoFeatureEnabled;
 
 static public final function Packages GetInstance()
 {
     return default.selfReference;
 }
 
+//  "Constructor"
 event PreBeginPlay()
 {
+    local GameMode                              currentGameMode;
+    local array<CoreService.FeatureConfigPair>  availableFeatures;
+    CheckForGarbage();
     //  Enforce one copy rule and remember a reference to that copy
     if (default.selfReference != none)
     {
@@ -56,179 +63,123 @@ event PreBeginPlay()
         return;
     }
     default.selfReference = self;
-    BootUp();
-    if (class'TestingService'.default.runTestsOnStartUp) {
-        RunStartUpTests();
-    }
-}
-
-private final function BootUp()
-{
-    local int               i;
-    local class<_manifest>  nextManifest;
-    //  Load core
-    Spawn(class'CoreService');
+    //  Launch and setup core Acedia
+    class'CoreService'.static.LaunchAcedia(self, package);
     _ = class'Global'.static.GetInstance();
-    nextManifest = LoadManifestClass(corePackage);
-    if (nextManifest == none)
+    SetupMutatorSignals();
+    //  Determine required features and launch them
+    availableFeatures = CoreService(class'CoreService'.static.GetInstance())
+        .GetAutoConfigurationInfo();
+    if (useGameModes)
     {
-        /*_.logger.Fatal("Cannot load required AcediaCore package \""
-            $ corePackage $ "\". Acedia will shut down.");*/
-        Destroy();
-        return;
-    }
-    LoadManifest(nextManifest);
-    //  Load packages
-    for (i = 0; i < package.length; i += 1)
-    {
-        nextManifest = LoadManifestClass(package[i]);
-        if (nextManifest == none)
-        {
-            /*_.logger.Failure("Cannot load `Manifest` for package \""
-                $ package[i] $ "\". Check if it's missing or"
-                @ "if it's name is spelled incorrectly.");*/
-            continue;
+        votingAdapter = VotingHandlerAdapter(
+            _.memory.Allocate(class'VotingHandlerAdapter'));
+        votingAdapter.InjectIntoVotingHandler();
+        currentGameMode = votingAdapter.SetupGameModeAfterTravel();
+        if (currentGameMode != none) {
+            currentGameMode.UpdateFeatureArray(availableFeatures);
         }
-        LoadManifest(nextManifest);
     }
-    //  Inject broadcast handler
-    InjectBroadcastHandler();
+    EnableFeatures(availableFeatures);
 }
 
-private final function RunStartUpTests()
+//  "Finalizer"
+function ServerTraveling(string URL, bool bItems)
 {
-    local TestingService testService;
-    testService = TestingService(class'TestingService'.static.Require());
-    testService.PrepareTests();
-    if (testService.filterTestsByName) {
-        testService.FilterByName(testService.requiredName);
-    }
-    if (testService.filterTestsByGroup) {
-        testService.FilterByGroup(testService.requiredGroup);
-    }
-    if (testService.Run())
+    if (votingAdapter != none)
     {
-        //  This listener will output test results into server's console
-        class'TestingListener_AcediaLauncher'.static.SetActive(true);
+        votingAdapter.PrepareForServerTravel();
+        votingAdapter.RestoreVotingHandlerConfigBackup();
+        _.memory.Free(votingAdapter);
+        votingAdapter = none;
+    }
+    default.selfReference = none;
+    CoreService(class'CoreService'.static.GetInstance()).ShutdownAcedia();
+    if (nextMutator != none) {
+    	nextMutator.ServerTraveling(URL, bItems);
+    }
+    Destroy();
+}
+
+//  Checks whether Acedia has left garbage after the previous map.
+//  This can lead to serious problems, so such diagnostic check is warranted.
+private function CheckForGarbage()
+{
+    local int leftoverObjectAmount, leftoverActorAmount, leftoverDBRAmount;
+    local AcediaObject  nextObject;
+    local AcediaActor   nextActor;
+    local DBRecord      nextRecord;
+    foreach AllObjects(class'AcediaObject', nextObject) {
+        leftoverObjectAmount += 1;
+    }
+    foreach AllActors(class'AcediaActor', nextActor) {
+        leftoverActorAmount += 1;
+    }
+    foreach AllObjects(class'DBRecord', nextRecord) {
+        leftoverDBRAmount += 1;
+    }
+    if (    leftoverObjectAmount == 0 && leftoverActorAmount == 0
+        &&  leftoverDBRAmount == 0)
+    {
+        Log("Acedia garbage check: nothing was found.");
     }
     else
     {
-        //_.logger.Failure("Could not launch Acedia's start up testing process.");
+        Log("Acedia garbage check: garbage was found." @
+            "This can cause problems, report it.");
+        Log("Leftover object:" @ leftoverObjectAmount);
+        Log("Leftover actors:" @ leftoverActorAmount);
+        Log("Leftover database records:" @ leftoverDBRAmount);
     }
 }
 
-private final function class<_manifest> LoadManifestClass(string packageName)
-{
-    return class<_manifest>(DynamicLoadObject(  packageName $ manifestSuffix,
-                                                class'Class', true));
-}
-
-private final function LoadManifest(class<_manifest> manifestClass)
+private function EnableFeatures(array<CoreService.FeatureConfigPair> features)
 {
     local int i;
-    for (i = 0; i < manifestClass.default.aliasSources.length; i += 1)
+    for (i = 0; i < features.length; i += 1)
     {
-        if (manifestClass.default.aliasSources[i] == none) continue;
-        //Spawn(manifestClass.default.aliasSources[i]);
-        _.memory.Allocate(manifestClass.default.aliasSources[i]);
-    }
-    LaunchServicesAndFeatures(manifestClass);
-    if (class'Commands_Feature'.static.IsEnabled()) {
-        RegisterCommands(manifestClass);
-    }
-    for (i = 0; i < manifestClass.default.testCases.length; i += 1)
-    {
-        class'TestingService'.static
-            .RegisterTestCase(manifestClass.default.testCases[i]);
+        if (features[i].featureClass == none)   continue;
+        if (features[i].configName == none)     continue;
+        features[i].featureClass.static.EnableMe(features[i].configName);
+        _.logger.Auto(infoFeatureEnabled)
+            .Arg(_.text.FromString(string(features[i].featureClass)))
+            .Arg(features[i].configName);  //  consumes `configName`
     }
 }
 
-private final function RegisterCommands(class<_manifest> manifestClass)
+//  Fetches and sets up signals that `Mutator` needs to provide
+private function SetupMutatorSignals()
 {
-    local int               i;
-    local Commands_Feature  commandsFeature;
-    commandsFeature =
-        Commands_Feature(class'Commands_Feature'.static.GetInstance());
-    for (i = 0; i < manifestClass.default.commands.length; i += 1)
-    {
-        if (manifestClass.default.commands[i] == none) continue;
-        commandsFeature.RegisterCommand(manifestClass.default.commands[i]);
-    }
+    local UnrealService service;
+    service = UnrealService(class'UnrealService'.static.Require());
+    onMutateSignal              = Mutator_OnMutate_Signal(
+        service.GetSignal(class'Mutator_OnMutate_Signal'));
+    onCheckReplacementSignal    = Mutator_OnCheckReplacement_Signal(
+        service.GetSignal(class'Mutator_OnCheckReplacement_Signal'));
 }
 
-private final function LaunchServicesAndFeatures(class<_manifest> manifestClass)
-{
-    local int   i;
-    local Text  autoConfigName;
-    //  Services
-    for (i = 0; i < manifestClass.default.services.length; i += 1)
-    {
-        if (manifestClass.default.services[i] == none) continue;
-        manifestClass.default.services[i].static.Require();
-    }
-    //  Features
-    for (i = 0; i < manifestClass.default.features.length; i += 1)
-    {
-        if (manifestClass.default.features[i] == none) continue;
-        manifestClass.default.features[i].static.LoadConfigs();
-        autoConfigName =
-            manifestClass.default.features[i].static.GetAutoEnabledConfig();
-        if (autoConfigName != none) {
-            manifestClass.default.features[i].static.EnableMe(autoConfigName);
-        }
-        _.memory.Free(autoConfigName);
-    }
-}
-
-private final function InjectBroadcastHandler()
-{
-    local BroadcastEventsObserver                   ourBroadcastHandler;
-    local BroadcastEventsObserver.InjectionLevel    injectionLevel;
-    injectionLevel = class'BroadcastEventsObserver'.default.usedInjectionLevel;
-    if (level == none || level.game == none)    return;
-    if (injectionLevel == BHIJ_None)            return;
-
-    ourBroadcastHandler = Spawn(class'BroadcastEventsObserver');
-    if (injectionLevel == BHIJ_Registered)
-    {
-        level.game.broadcastHandler
-            .RegisterBroadcastHandler(ourBroadcastHandler);
-        return;
-    }
-    //      Here `injectionLevel == BHIJ_Root` holds.
-    //      Swap out level's first handler with ours
-    //  (needs to be done for both actor reference and it's class)
-    ourBroadcastHandler.nextBroadcastHandler = level.game.broadcastHandler;
-    ourBroadcastHandler.nextBroadcastHandlerClass = level.game.broadcastClass;
-    level.game.broadcastHandler = ourBroadcastHandler;
-    level.game.broadcastClass   = class'BroadcastEventsObserver';
-}
-
-//  Acedia is only able to run in a server mode right now,
-//  so this function is just a stub.
-public final function bool IsServerOnly()
-{
-    return true;
-}
-
-//  Provide a way to handle CheckReplacement event
+/**
+ *  Below `Mutator` events are redirected into appropriate signals.
+ */
 function bool CheckReplacement(Actor other, out byte isSuperRelevant)
 {
-    return class'MutatorEvents'.static.
-        CallCheckReplacement(other, isSuperRelevant);
+    if (onCheckReplacementSignal != none) {
+        return onCheckReplacementSignal.Emit(other, isSuperRelevant);
+    }
+    return true;
 }
 
 function Mutate(string command, PlayerController sendingController)
 {
-    if (class'MutatorEvents'.static.CallMutate(command, sendingController)) {
-        super.Mutate(command, sendingController);
+    if (onMutateSignal != none) {
+        onMutateSignal.Emit(command, sendingController);
     }
+    super.Mutate(command, sendingController);
 }
 
 defaultproperties
 {
-    corePackage     = "AcediaCore_0_2"
-    manifestSuffix  = ".Manifest"
+    useGameModes    = false
     //  This is a server-only mutator
     remoteRole      = ROLE_None
     bAlwaysRelevant = true
@@ -236,4 +187,5 @@ defaultproperties
     GroupName       = "Package loader"
     FriendlyName    = "Acedia loader"
     Description     = "Launcher for Acedia packages"
+    infoFeatureEnabled = (l=LOG_Info,m="Feature `%1` enabled with config \"%2\".")
 }
