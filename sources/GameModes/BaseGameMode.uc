@@ -106,7 +106,7 @@ protected function FromData(AssociativeArray source)
     }
     nextText = source.GetText(P("difficulty"));
     if (nextText != none) {
-        difficulty = nextText.ToPlainString();
+        difficulty = nextText.ToString();
     }
     includeFeature =
         DynamicIntoStringArray(source.GetDynamicArray(P("includeFeature")));
@@ -136,11 +136,11 @@ private final function FeatureConfigPair AssociativeArrayIntoPair(
     }
     nextText = source.GetText(P("feature"));
     if (nextText != none) {
-        result.feature = nextText.ToPlainString();
+        result.feature = nextText.ToString();
     }
     nextText = source.GetText(P("config"));
     if (nextText != none) {
-        result.config = nextText.ToPlainString();
+        result.config = nextText.ToString();
     }
     return result;
 }
@@ -157,7 +157,7 @@ private final function array<string> DynamicIntoStringArray(DynamicArray source)
     {
         nextText = source.GetText(i);
         if (nextText != none) {
-            includeFeature[i] = nextText.ToPlainString();
+            includeFeature[i] = nextText.ToString();
         }
     }
 }

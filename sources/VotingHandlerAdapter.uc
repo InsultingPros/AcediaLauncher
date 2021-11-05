@@ -174,8 +174,8 @@ private function string BuildOptionsString(GameMode gameMode)
     options = gameMode.GetOptions();
     for (iter = options.Iterate(); !iter.HasFinished(); iter.Next())
     {
-        nextKey     = Text(iter.GetKey()).ToPlainString();
-        nextValue   = Text(iter.Get()).ToPlainString();
+        nextKey     = Text(iter.GetKey()).ToString();
+        nextValue   = Text(iter.Get()).ToString();
         if (optionWasAdded) {
             result $= "?";
         }
@@ -227,7 +227,7 @@ public final function PrepareForServerTravel()
         nextGameClass = class<GameInfo>(_.memory.LoadClassS(nextGameClassName));
     }
     default.isServerTraveling = true;
-    default.targetGameMode = availableGameModes[pickedVHConfig].ToPlainString();
+    default.targetGameMode = availableGameModes[pickedVHConfig].ToString();
     nextGameMode = GetConfigFromString(default.targetGameMode);
     default.storedGameDifficulty = nextGameClass.default.gameDifficulty;
     nextGameClass.default.gameDifficulty = GetNumericDifficulty(nextGameMode);

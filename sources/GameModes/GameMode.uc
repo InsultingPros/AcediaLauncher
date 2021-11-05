@@ -91,15 +91,15 @@ protected function FromData(AssociativeArray source)
     }
     nextText = source.GetText(P("gameTypeClass"));
     if (nextText != none) {
-        gameTypeClass = nextText.ToPlainString();
+        gameTypeClass = nextText.ToString();
     }
     nextText = source.GetText(P("acronym"));
     if (nextText != none) {
-        acronym = nextText.ToPlainString();
+        acronym = nextText.ToString();
     }
     nextText = source.GetText(P("mapPrefix"));
     if (nextText != none) {
-        mapPrefix = nextText.ToPlainString();
+        mapPrefix = nextText.ToString();
     }
     nextArray = source.GetDynamicArray(P("option"));
     if (nextArray == none) {
@@ -112,11 +112,11 @@ protected function FromData(AssociativeArray source)
         nextPair.value  = "";
         nextText = source.GetText(P("key"));
         if (nextText != none) {
-            nextPair.key = nextText.ToPlainString();
+            nextPair.key = nextText.ToString();
         }
         nextText = source.GetText(P("value"));
         if (nextText != none) {
-            nextPair.value = nextText.ToPlainString();
+            nextPair.value = nextText.ToString();
         }
         option[option.length] = nextPair;
     }
