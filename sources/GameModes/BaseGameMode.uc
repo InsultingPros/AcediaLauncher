@@ -279,7 +279,7 @@ private function ValidateFeatureArray(
         }
         if (!foundItem)
         {
-            _.logger.Auto(warnBadMutatorName)
+            _.logger.Auto(warnBadFeatureName)
                 .Arg(_.text.FromString(includeMutator[i]))
                 .Arg(_.text.FromString(string(name)))
                 .Arg(_.text.FromString(arrayName));
