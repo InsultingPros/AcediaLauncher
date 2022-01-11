@@ -41,6 +41,7 @@ var private config bool     useGameModes;
 var VotingHandlerAdapter    votingAdapter;
 
 var Mutator_OnMutate_Signal             onMutateSignal;
+var Mutator_OnModifyLogin_Signal        onModifyLoginSignal;
 var Mutator_OnCheckReplacement_Signal   onCheckReplacementSignal;
 
 var private LoggerAPI.Definition infoFeatureEnabled;
@@ -154,6 +155,8 @@ private function SetupMutatorSignals()
     service = UnrealService(class'UnrealService'.static.Require());
     onMutateSignal              = Mutator_OnMutate_Signal(
         service.GetSignal(class'Mutator_OnMutate_Signal'));
+    onModifyLoginSignal         = Mutator_OnModifyLogin_Signal(
+        service.GetSignal(class'Mutator_OnModifyLogin_Signal'));
     onCheckReplacementSignal    = Mutator_OnCheckReplacement_Signal(
         service.GetSignal(class'Mutator_OnCheckReplacement_Signal'));
 }
@@ -175,6 +178,14 @@ function Mutate(string command, PlayerController sendingController)
         onMutateSignal.Emit(command, sendingController);
     }
     super.Mutate(command, sendingController);
+}
+
+function ModifyLogin(out string portal, out string options)
+{
+    if (onModifyLoginSignal != none) {
+        onModifyLoginSignal.Emit(portal, options);
+    }
+    super.ModifyLogin(portal, options);
 }
 
 defaultproperties
