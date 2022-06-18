@@ -94,8 +94,8 @@ protected function AssociativeArray ToData()
 
 protected function FromData(AssociativeArray source)
 {
-    local int               i;
-    local Text              nextText;
+    local int           i;
+    local Text          nextText;
     local DynamicArray  includeFeatureAsSource;
     if (source == none) {
         return;
