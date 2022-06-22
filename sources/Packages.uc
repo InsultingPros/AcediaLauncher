@@ -20,7 +20,6 @@
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
 class Packages extends Mutator
-    dependson(CoreService)
     config(Acedia);
 
 //      Default value of this variable will be used to store
@@ -45,6 +44,13 @@ var Mutator_OnModifyLogin_Signal        onModifyLoginSignal;
 var Mutator_OnCheckReplacement_Signal   onCheckReplacementSignal;
 
 var private LoggerAPI.Definition infoFeatureEnabled;
+var private LoggerAPI.Definition errNoServerLevelCore, errorCannotRunTests;
+
+struct FeatureConfigPair
+{
+    var public class<Feature>   featureClass;
+    var public Text             configName;
+};
 
 static public final function Packages GetInstance()
 {
@@ -54,8 +60,10 @@ static public final function Packages GetInstance()
 //  "Constructor"
 event PreBeginPlay()
 {
-    local GameMode                              currentGameMode;
-    local array<CoreService.FeatureConfigPair>  availableFeatures;
+    local int                       i;
+    local LevelCore                 serverCore;
+    local GameMode                  currentGameMode;
+    local array<FeatureConfigPair>  availableFeatures;
     CheckForGarbage();
     //  Enforce one copy rule and remember a reference to that copy
     if (default.selfReference != none)
@@ -65,12 +73,25 @@ event PreBeginPlay()
     }
     default.selfReference = self;
     //  Launch and setup core Acedia
-    class'CoreService'.static.LaunchAcedia(self, package);
+    serverCore = class'ServerLevelCore'.static.CreateLevelCore(self);
     _ = class'Global'.static.GetInstance();
+    for (i = 0; i < package.length; i += 1) {
+        _.environment.RegisterPackage_S(package[i]);
+    }
+    if (serverCore != none) {
+        _.ConnectServerLevelCore();
+    }
+    else
+    {
+        _.logger.Auto(errNoServerLevelCore);
+        return;
+    }
+    if (class'TestingService'.default.runTestsOnStartUp) {
+        RunStartUpTests();
+    }
     SetupMutatorSignals();
     //  Determine required features and launch them
-    availableFeatures = CoreService(class'CoreService'.static.GetInstance())
-        .GetAutoConfigurationInfo();
+    availableFeatures = GetAutoConfigurationInfo();
     if (useGameModes)
     {
         votingAdapter = VotingHandlerAdapter(
@@ -95,7 +116,8 @@ function ServerTraveling(string URL, bool bItems)
         votingAdapter = none;
     }
     default.selfReference = none;
-    CoreService(class'CoreService'.static.GetInstance()).ShutdownAcedia();
+    _.environment.DisableAllFeatures();
+    class'UnrealService'.static.Require().Destroy();
     if (nextMutator != none) {
     	nextMutator.ServerTraveling(URL, bItems);
     }
@@ -134,7 +156,25 @@ private function CheckForGarbage()
     }
 }
 
-private function EnableFeatures(array<CoreService.FeatureConfigPair> features)
+public final function array<FeatureConfigPair> GetAutoConfigurationInfo()
+{
+    local int                       i;
+    local array< class<Feature> >   availableFeatures;
+    local FeatureConfigPair         nextPair;
+    local array<FeatureConfigPair>  result;
+
+    availableFeatures = _.environment.GetAvailableFeatures();
+    for (i = 0; i < availableFeatures.length; i += 1)
+    {
+        nextPair.featureClass   = availableFeatures[i];
+        nextPair.configName     = availableFeatures[i].static
+            .GetAutoEnabledConfig();
+        result[result.length] = nextPair;
+    }
+    return result;
+}
+
+private function EnableFeatures(array<FeatureConfigPair> features)
 {
     local int i;
     for (i = 0; i < features.length; i += 1)
@@ -159,6 +199,23 @@ private function SetupMutatorSignals()
         service.GetSignal(class'Mutator_OnModifyLogin_Signal'));
     onCheckReplacementSignal    = Mutator_OnCheckReplacement_Signal(
         service.GetSignal(class'Mutator_OnCheckReplacement_Signal'));
+}
+
+private final function RunStartUpTests()
+{
+    local TestingService testService;
+
+    testService = TestingService(class'TestingService'.static.Require());
+    testService.PrepareTests();
+    if (testService.filterTestsByName) {
+        testService.FilterByName(testService.requiredName);
+    }
+    if (testService.filterTestsByGroup) {
+        testService.FilterByGroup(testService.requiredGroup);
+    }
+    if (!testService.Run()) {
+        _.logger.Auto(errorCannotRunTests);
+    }
 }
 
 /**
@@ -198,5 +255,7 @@ defaultproperties
     GroupName       = "Package loader"
     FriendlyName    = "Acedia loader"
     Description     = "Launcher for Acedia packages"
-    infoFeatureEnabled = (l=LOG_Info,m="Feature `%1` enabled with config \"%2\".")
+    infoFeatureEnabled      = (l=LOG_Info,m="Feature `%1` enabled with config \"%2\".")
+    errNoServerLevelCore    = (l=LOG_Error,m="Cannot create `ServerLevelCore`!")
+    errorCannotRunTests     = (l=LOG_Error,m="Could not perform Acedia's tests.")
 }

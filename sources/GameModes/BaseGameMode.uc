@@ -28,7 +28,7 @@
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
 class BaseGameMode extends AcediaConfig
-    dependson(CoreService)
+    dependson(Packages)
     abstract;
 
 //  Name of the game mode players will see in voting (formatted string)
@@ -205,7 +205,7 @@ public function Text GetDifficulty()
  *  actually exist.
  */
 public function ReportIncorrectSettings(
-    array<CoreService.FeatureConfigPair> featuresToEnable)
+    array<Packages.FeatureConfigPair> featuresToEnable)
 {
     local int i;
     local array<string> featureNames, featuresToReplace;
@@ -298,7 +298,7 @@ private function ValidateFeatureArray(
  *      Otherwise it should be enabled with a specified config.
  */
 public function UpdateFeatureArray(
-    out array<CoreService.FeatureConfigPair> featuresToEnable)
+    out array<Packages.FeatureConfigPair> featuresToEnable)
 {
     local int   i;
     local Text  newConfigName;
