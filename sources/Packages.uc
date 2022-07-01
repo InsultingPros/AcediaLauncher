@@ -118,6 +118,7 @@ function ServerTraveling(string URL, bool bItems)
     default.selfReference = none;
     _.environment.DisableAllFeatures();
     class'UnrealService'.static.Require().Destroy();
+    class'ServerLevelCore'.static.GetInstance().Destroy();
     if (nextMutator != none) {
     	nextMutator.ServerTraveling(URL, bItems);
     }
