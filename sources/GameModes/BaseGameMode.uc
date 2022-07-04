@@ -54,80 +54,82 @@ var protected config array<FeatureConfigPair> includeFeatureAs;
 
 var private LoggerAPI.Definition warnBadMutatorName, warnBadFeatureName;
 
-protected function AssociativeArray ToData()
+protected function HashTable ToData()
 {
-    local int               i;
-    local AssociativeArray  result;
-    local AssociativeArray  nextPair;
-    local DynamicArray      nextArray;
-    result = _.collections.EmptyAssociativeArray();
-    result.SetItem(P("title"), _.text.FromFormattedString(title));
-    result.SetItem(P("difficulty"), _.text.FromString(difficulty));
-    nextArray = _.collections.EmptyDynamicArray();
+    local int       i;
+    local HashTable result;
+    local HashTable nextPair;
+    local ArrayList nextArray;
+
+    result = _.collections.EmptyHashTable();
+    result.SetFormattedString(P("title"), title);
+    result.SetString(P("difficulty"), difficulty);
+    nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < includeFeature.length; i += 1) {
-        nextArray.AddItem(_.text.FromString(includeFeature[i]));
+        nextArray.AddString(includeFeature[i]);
     }
     result.SetItem(P("includeFeature"), nextArray);
-    nextArray = _.collections.EmptyDynamicArray();
+    _.memory.Free(nextArray);
+    nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < excludeFeature.length; i += 1) {
         nextArray.AddItem(_.text.FromString(excludeFeature[i]));
     }
     result.SetItem(P("excludeFeature"), nextArray);
-    nextArray = _.collections.EmptyDynamicArray();
+    _.memory.Free(nextArray);
+    nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < includeMutator.length; i += 1) {
         nextArray.AddItem(_.text.FromString(includeFeature[i]));
     }
     result.SetItem(P("includeMutator"), nextArray);
-    nextArray = _.collections.EmptyDynamicArray();
+    _.memory.Free(nextArray);
+    nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < includeFeatureAs.length; i += 1)
     {
-        nextPair = _.collections.EmptyAssociativeArray();
-        nextPair.SetItem(P("feature"),
-            _.text.FromString(includeFeatureAs[i].feature));
-        nextPair.SetItem(P("config"),
-            _.text.FromString(includeFeatureAs[i].config));
+        nextPair = _.collections.EmptyHashTable();
+        nextPair.SetString(P("feature"), includeFeatureAs[i].feature);
+        nextPair.SetString(P("config"), includeFeatureAs[i].config);
         nextArray.AddItem(nextPair);
+        _.memory.Free(nextPair);
     }
     result.SetItem(P("includeFeatureAs"), nextArray);
+    _.memory.Free(nextArray);
     return result;
 }
 
-protected function FromData(AssociativeArray source)
+protected function FromData(HashTable source)
 {
-    local int           i;
-    local Text          nextText;
-    local DynamicArray  includeFeatureAsSource;
+    local int       i;
+    local ArrayList nextArray;
+    local HashTable nextPair;
     if (source == none) {
         return;
     }
-    nextText = source.GetText(P("title"));
-    if (nextText != none) {
-        title = nextText.ToFormattedString();
-    }
-    nextText = source.GetText(P("difficulty"));
-    if (nextText != none) {
-        difficulty = nextText.ToString();
-    }
-    includeFeature =
-        DynamicIntoStringArray(source.GetDynamicArray(P("includeFeature")));
-    excludeFeature =
-        DynamicIntoStringArray(source.GetDynamicArray(P("excludeFeature")));
-    includeMutator =
-        DynamicIntoStringArray(source.GetDynamicArray(P("includeMutator")));
-    includeFeatureAsSource = source.GetDynamicArray(P("includeFeatureAs"));
-    if (includeFeatureAsSource == none) {
+    title =  source.GetFormattedString(P("title"));
+    title =  source.GetString(P("title"));
+    nextArray = source.GetArrayList(P("includeFeature"));
+    includeFeature = DynamicIntoStringArray(nextArray);
+    _.memory.Free(nextArray);
+    nextArray = source.GetArrayList(P("excludeFeature"));
+    excludeFeature = DynamicIntoStringArray(nextArray);
+    _.memory.Free(nextArray);
+    nextArray = source.GetArrayList(P("includeMutator"));
+    includeMutator = DynamicIntoStringArray(nextArray);
+    _.memory.Free(nextArray);
+    nextArray = source.GetArrayList(P("includeFeatureAs"));
+    if (nextArray == none) {
         return;
     }
     includeFeatureAs.length = 0;
-    for (i = 0; i < includeFeatureAsSource.GetLength(); i += 1)
+    for (i = 0; i < nextArray.GetLength(); i += 1)
     {
-        includeFeatureAs[i] = AssociativeArrayIntoPair(
-            includeFeatureAsSource.GetAssociativeArray(i));
+        nextPair = nextArray.GetHashTable(i);
+        includeFeatureAs[i] = HashTableIntoPair(nextPair);
+        _.memory.Free(nextPair);
     }
+    _.memory.Free(nextArray);
 }
 
-private final function FeatureConfigPair AssociativeArrayIntoPair(
-    AssociativeArray source)
+private final function FeatureConfigPair HashTableIntoPair(HashTable source)
 {
     local Text              nextText;
     local FeatureConfigPair result;
@@ -145,7 +147,7 @@ private final function FeatureConfigPair AssociativeArrayIntoPair(
     return result;
 }
 
-private final function array<string> DynamicIntoStringArray(DynamicArray source)
+private final function array<string> DynamicIntoStringArray(ArrayList source)
 {
     local int           i;
     local Text          nextText;

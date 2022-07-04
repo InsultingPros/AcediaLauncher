@@ -54,72 +54,62 @@ protected function DefaultIt()
     option.length = 0;
 }
 
-protected function AssociativeArray ToData()
+protected function HashTable ToData()
 {
-    local int               i;
-    local AssociativeArray  result;
-    local AssociativeArray  nextPair;
-    local DynamicArray      nextArray;
+    local int       i;
+    local ArrayList nextArray;
+    local HashTable result, nextPair;
     result = super.ToData();
     if (result == none) {
         return none;
     }
-    result.SetItem(P("gameTypeClass"), _.text.FromString(gameTypeClass));
-    result.SetItem(P("acronym"), _.text.FromString(acronym));
-    result.SetItem(P("mapPrefix"), _.text.FromString(mapPrefix));
-    nextArray = _.collections.EmptyDynamicArray();
+    result.SetString(P("gameTypeClass"), gameTypeClass);
+    result.SetString(P("acronym"), acronym);
+    result.SetString(P("mapPrefix"), mapPrefix);
+    nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < option.length; i += 1)
     {
-        nextPair = _.collections.EmptyAssociativeArray();
-        nextPair.SetItem(P("key"), _.text.FromString(option[i].key));
-        nextPair.SetItem(P("value"), _.text.FromString(option[i].value));
+        nextPair = _.collections.EmptyHashTable();
+        nextPair.SetString(P("key"), option[i].key);
+        nextPair.SetString(P("value"), option[i].value);
         nextArray.AddItem(nextPair);
+        _.memory.Free(nextPair);
     }
     result.SetItem(P("option"), nextArray);
+    _.memory.Free(nextArray);
     return result;
 }
 
-protected function FromData(AssociativeArray source)
+protected function FromData(HashTable source)
 {
     local int           i;
-    local Text          nextText;
-    local GameOption    nextPair;
-    local DynamicArray  nextArray;
+    local GameOption    nextGameOption;
+    local ArrayList     nextArray;
+    local HashTable     nextPair;
     super.FromData(source);
     if (source == none) {
         return;
     }
-    nextText = source.GetText(P("gameTypeClass"));
-    if (nextText != none) {
-        gameTypeClass = nextText.ToString();
-    }
-    nextText = source.GetText(P("acronym"));
-    if (nextText != none) {
-        acronym = nextText.ToString();
-    }
-    nextText = source.GetText(P("mapPrefix"));
-    if (nextText != none) {
-        mapPrefix = nextText.ToString();
-    }
-    nextArray = source.GetDynamicArray(P("option"));
+    gameTypeClass = source.GetString(P("gameTypeClass"));
+    acronym = source.GetString(P("acronym"));
+    mapPrefix = source.GetString(P("mapPrefix"));
+    nextArray = source.GetArrayList(P("option"));
     if (nextArray == none) {
         return;
     }
     option.length = 0;
     for (i = 0; i < nextArray.GetLength(); i += 1)
     {
-        nextPair.key    = "";
-        nextPair.value  = "";
-        nextText = source.GetText(P("key"));
-        if (nextText != none) {
-            nextPair.key = nextText.ToString();
+        nextPair = HashTable(nextArray.GetItem(i));
+        if (nextPair == none) {
+            continue;
         }
-        nextText = source.GetText(P("value"));
-        if (nextText != none) {
-            nextPair.value = nextText.ToString();
-        }
-        option[option.length] = nextPair;
+        nextGameOption.key      = nextPair.GetString(P("key"));
+        nextGameOption.value    = nextPair.GetString(P("value"));
+        option[option.length]   = nextGameOption;
+        _.memory.Free(nextPair);
     }
+    _.memory.Free(nextArray);
 }
 
 public function Text GetGameTypeClass()
