@@ -166,11 +166,11 @@ private function string BuildMutatorString(GameMode gameMode)
 
 private function string BuildOptionsString(GameMode gameMode)
 {
-    local bool              optionWasAdded;
-    local string            result;
-    local string            nextKey, nextValue;
-    local Iter              iter;
-    local AssociativeArray  options;
+    local bool                  optionWasAdded;
+    local string                result;
+    local string                nextKey, nextValue;
+    local CollectionIterator    iter;
+    local AssociativeArray      options;
     options = gameMode.GetOptions();
     for (iter = options.Iterate(); !iter.HasFinished(); iter.Next())
     {
