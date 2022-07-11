@@ -223,8 +223,10 @@ public final function PrepareForServerTravel()
     if (string(_.unreal.GetGameType().class) ~= nextGameClassName) {
         nextGameClass = _.unreal.GetGameType().class;
     }
-    else {
-        nextGameClass = class<GameInfo>(_.memory.LoadClassS(nextGameClassName));
+    else
+    {
+        nextGameClass =
+            class<GameInfo>(_.memory.LoadClass_S(nextGameClassName));
     }
     default.isServerTraveling = true;
     default.targetGameMode = availableGameModes[pickedVHConfig].ToString();

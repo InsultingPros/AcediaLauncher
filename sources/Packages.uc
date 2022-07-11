@@ -2,7 +2,7 @@
  *      Main and only Acedia mutator used for loading Acedia packages
  *  and providing access to mutator events' calls.
  *      Name is chosen to make config files more readable.
- *      Copyright 2020-2021 Anton Tarasenko
+ *      Copyright 2020-2022 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
@@ -30,8 +30,12 @@ class Packages extends Mutator
 var private Packages selfReference;
 
 //  Acedia's reference to a `Global` object.
-var private Global _;
+var private Global          _;
+var private ServerGlobal    _server;
+var private ClientGlobal    _client;
 
+//  Load Acedia on the client as well?
+var private config bool clientside;
 //  Array of predefined services that must be started along with Acedia mutator.
 var private config array<string> package;
 //  Set to `true` to activate Acedia's game modes system
@@ -58,12 +62,38 @@ static public final function Packages GetInstance()
 }
 
 //  "Constructor"
-event PreBeginPlay()
+simulated function PreBeginPlay()
+{
+    if (level.netMode == NM_DedicatedServer) {
+        InitializeServer();
+    }
+    else {
+        InitializeClient();
+    }
+}
+
+private simulated function InitializeClient()
+{
+    //  Enforce one copy rule and remember a reference to that copy
+    if (default.selfReference != none)
+    {
+        Destroy();
+        return;
+    }
+    default.selfReference = self;
+    class'ClientLevelCore'.static.CreateLevelCore(self);
+    _ = class'Global'.static.GetInstance();
+}
+
+private function InitializeServer()
 {
     local int                       i;
     local LevelCore                 serverCore;
     local GameMode                  currentGameMode;
     local array<FeatureConfigPair>  availableFeatures;
+    if (clientside) {
+        AddToPackageMap("Acedia");
+    }
     CheckForGarbage();
     //  Enforce one copy rule and remember a reference to that copy
     if (default.selfReference != none)
@@ -74,12 +104,14 @@ event PreBeginPlay()
     default.selfReference = self;
     //  Launch and setup core Acedia
     serverCore = class'ServerLevelCore'.static.CreateLevelCore(self);
-    _ = class'Global'.static.GetInstance();
+    _       = class'Global'.static.GetInstance();
+    _server = class'ServerGlobal'.static.GetInstance();
+    _client = class'ClientGlobal'.static.GetInstance();
     for (i = 0; i < package.length; i += 1) {
         _.environment.RegisterPackage_S(package[i]);
     }
     if (serverCore != none) {
-        _.ConnectServerLevelCore();
+        _server.ConnectServerLevelCore();
     }
     else
     {
@@ -248,9 +280,10 @@ function ModifyLogin(out string portal, out string options)
 
 defaultproperties
 {
+    clientside      = false
     useGameModes    = false
     //  This is a server-only mutator
-    remoteRole      = ROLE_None
+    remoteRole      = ROLE_SimulatedProxy
     bAlwaysRelevant = true
     //  Mutator description
     GroupName       = "Package loader"
