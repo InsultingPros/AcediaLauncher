@@ -112,14 +112,14 @@ public final function InjectIntoVotingHandler()
     if (votingHandlerReference != none) {
         return;
     }
-    votingHandler = XVotingHandler(_.unreal.FindActorInstance(
-        _.unreal.GetGameType().VotingHandlerClass));
+    votingHandler = XVotingHandler(_server.unreal.FindActorInstance(
+        _server.unreal.GetGameType().VotingHandlerClass));
     if (votingHandler == none)
     {
         _.logger.Auto(fatNoXVotingHandler);
         return;
     }
-    votingHandlerReference = _.unreal.ActorRef(votingHandler);
+    votingHandlerReference = _server.unreal.ActorRef(votingHandler);
     class'GameMode'.static.Initialize();
     availableGameModes = class'GameMode'.static.AvailableConfigs();
     for (i = 0; i < availableGameModes.length; i += 1)
@@ -220,8 +220,8 @@ public final function PrepareForServerTravel()
         return;
     }
     nextGameClassName = votingHandler.gameConfig[pickedVHConfig].gameClass;
-    if (string(_.unreal.GetGameType().class) ~= nextGameClassName) {
-        nextGameClass = _.unreal.GetGameType().class;
+    if (string(_server.unreal.GetGameType().class) ~= nextGameClassName) {
+        nextGameClass = _server.unreal.GetGameType().class;
     }
     else
     {
@@ -247,7 +247,8 @@ public final function GameMode SetupGameModeAfterTravel()
     if (!default.isServerTraveling) {
         return none;
     }
-    _.unreal.GetGameType().default.gameDifficulty = default.storedGameDifficulty;
+    _server.unreal.GetGameType().default.gameDifficulty =
+        default.storedGameDifficulty;
     default.isServerTraveling = false;
     return GetConfigFromString(targetGameMode);
 }
