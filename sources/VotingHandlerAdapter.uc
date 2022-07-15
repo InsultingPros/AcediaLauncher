@@ -170,19 +170,18 @@ private function string BuildOptionsString(GameMode gameMode)
     local string                result;
     local string                nextKey, nextValue;
     local CollectionIterator    iter;
-    local AssociativeArray      options;
+    local HashTable             options;
     options = gameMode.GetOptions();
     for (iter = options.Iterate(); !iter.HasFinished(); iter.Next())
     {
-        nextKey     = Text(iter.GetKey()).ToString();
-        nextValue   = Text(iter.Get()).ToString();
+        nextKey     = _.text.ToString(Text(iter.GetKey()));
+        nextValue   = _.text.ToString(Text(iter.Get()));
         if (optionWasAdded) {
             result $= "?";
         }
         result $= (nextKey $ "=" $ nextValue);
         optionWasAdded = true;
     }
-    options.Empty(true);
     options.FreeSelf();
     iter.FreeSelf();
     return result;

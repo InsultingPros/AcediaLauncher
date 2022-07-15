@@ -167,13 +167,13 @@ public function ReportBadOptions()
 }
 
 /**
- *  @return Server options as key-value pairs in an `AssociativeArray`.
+ *  @return Server options as key-value pairs in an `HashTable`.
  */
-public function AssociativeArray GetOptions()
+public function HashTable GetOptions()
 {
-    local int               i;
-    local AssociativeArray  result;
-    result = _.collections.EmptyAssociativeArray();
+    local int       i;
+    local HashTable result;
+    result = _.collections.EmptyHashTable();
     for (i = 0; i < option.length; i += 1)
     {
         if (!ValidateServerURLName(option[i].key))      continue;
