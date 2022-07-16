@@ -81,6 +81,7 @@ private simulated function InitializeClient()
         return;
     }
     default.selfReference = self;
+    //  TODO: Swap these around after dealing with aliases
     class'ClientLevelCore'.static.CreateLevelCore(self);
     _ = class'Global'.static.GetInstance();
 }
@@ -103,6 +104,7 @@ private function InitializeServer()
     }
     default.selfReference = self;
     //  Launch and setup core Acedia
+    //  TODO: Swap these around after dealing with aliases
     serverCore = class'ServerLevelCore'.static.CreateLevelCore(self);
     _       = class'Global'.static.GetInstance();
     _server = class'ServerGlobal'.static.GetInstance();
@@ -148,9 +150,7 @@ function ServerTraveling(string URL, bool bItems)
         votingAdapter = none;
     }
     default.selfReference = none;
-    _.environment.DisableAllFeatures();
-    class'UnrealService'.static.Require().Destroy();
-    class'ServerLevelCore'.static.GetInstance().Destroy();
+    _.environment.ShutDown();
     if (nextMutator != none) {
     	nextMutator.ServerTraveling(URL, bItems);
     }
