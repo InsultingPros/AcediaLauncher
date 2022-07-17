@@ -224,8 +224,8 @@ private function EnableFeatures(array<FeatureConfigPair> features)
 //  Fetches and sets up signals that `Mutator` needs to provide
 private function SetupMutatorSignals()
 {
-    local UnrealService service;
-    service = UnrealService(class'UnrealService'.static.Require());
+    local ServerUnrealService service;
+    service = ServerUnrealService(class'ServerUnrealService'.static.Require());
     onMutateSignal              = Mutator_OnMutate_Signal(
         service.GetSignal(class'Mutator_OnMutate_Signal'));
     onModifyLoginSignal         = Mutator_OnModifyLogin_Signal(
