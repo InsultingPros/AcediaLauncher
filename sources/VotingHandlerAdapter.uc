@@ -139,10 +139,10 @@ private function VotingHandler.MapVoteGameConfig BuildVotingHandlerConfig(
     GameMode gameMode)
 {
     local VotingHandler.MapVoteGameConfig result;
-    result.gameClass    = _.text.ToString(gameMode.GetGameTypeClass());
+    result.gameClass    = _.text.IntoString(gameMode.GetGameTypeClass());
     result.gameName     = _.text.ToColoredString(gameMode.GetTitle());
-    result.prefix       = _.text.ToString(gameMode.GetMapPrefix());
-    result.acronym      = _.text.ToString(gameMode.GetAcronym());
+    result.prefix       = _.text.IntoString(gameMode.GetMapPrefix());
+    result.acronym      = _.text.IntoString(gameMode.GetAcronym());
     result.mutators     = BuildMutatorString(gameMode);
     result.options      = BuildOptionsString(gameMode);
     return result;
@@ -159,7 +159,7 @@ private function string BuildMutatorString(GameMode gameMode)
         if (i > 0) {
             result $= ",";
         }
-        result $= _.text.ToString(usedMutators[i]);
+        result $= _.text.IntoString(usedMutators[i]);
     }
     return result;
 }
@@ -174,8 +174,8 @@ private function string BuildOptionsString(GameMode gameMode)
     options = gameMode.GetOptions();
     for (iter = options.Iterate(); !iter.HasFinished(); iter.Next())
     {
-        nextKey     = _.text.ToString(Text(iter.GetKey()));
-        nextValue   = _.text.ToString(Text(iter.Get()));
+        nextKey     = _.text.IntoString(Text(iter.GetKey()));
+        nextValue   = _.text.IntoString(Text(iter.Get()));
         if (optionWasAdded) {
             result $= "?";
         }
@@ -285,7 +285,7 @@ private final function int GetNumericDifficulty(GameMode gameMode)
 {
     local int i;
     local string difficulty;
-    difficulty = Locs(_.text.ToString(gameMode.GetDifficulty()));
+    difficulty = Locs(_.text.IntoString(gameMode.GetDifficulty()));
     for (i = 0; i < default.beginnerSynonyms.length; i += 1)
     {
         if (IsPrefixOf(difficulty, default.beginnerSynonyms[i])) {
