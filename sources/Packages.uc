@@ -81,9 +81,8 @@ private simulated function InitializeClient()
         return;
     }
     default.selfReference = self;
-    //  TODO: Swap these around after dealing with aliases
-    class'ClientLevelCore'.static.CreateLevelCore(self);
     _ = class'Global'.static.GetInstance();
+    class'ClientLevelCore'.static.CreateLevelCore(self);
 }
 
 private function InitializeServer()
@@ -104,11 +103,10 @@ private function InitializeServer()
     }
     default.selfReference = self;
     //  Launch and setup core Acedia
-    //  TODO: Swap these around after dealing with aliases
-    serverCore = class'ServerLevelCore'.static.CreateLevelCore(self);
     _       = class'Global'.static.GetInstance();
     _server = class'ServerGlobal'.static.GetInstance();
     _client = class'ClientGlobal'.static.GetInstance();
+    serverCore = class'ServerLevelCore'.static.CreateLevelCore(self);
     for (i = 0; i < package.length; i += 1) {
         _.environment.RegisterPackage_S(package[i]);
     }
