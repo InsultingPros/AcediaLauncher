@@ -22,13 +22,6 @@
 class Packages extends Mutator
     config(Acedia);
 
-//      Default value of this variable will be used to store
-//  reference to the active Acedia mutator,
-//  as well as to ensure there's only one copy of it.
-//      We can't use 'Singleton' class for that,
-//  as we have to derive from 'Mutator'.
-var private Packages selfReference;
-
 //  Acedia's reference to a `Global` object.
 var private Global          _;
 var private ServerGlobal    _server;
@@ -56,11 +49,6 @@ struct FeatureConfigPair
     var public Text             configName;
 };
 
-static public final function Packages GetInstance()
-{
-    return default.selfReference;
-}
-
 //  "Constructor"
 simulated function PreBeginPlay()
 {
@@ -74,13 +62,6 @@ simulated function PreBeginPlay()
 
 private simulated function InitializeClient()
 {
-    //  Enforce one copy rule and remember a reference to that copy
-    if (default.selfReference != none)
-    {
-        Destroy();
-        return;
-    }
-    default.selfReference = self;
     _ = class'Global'.static.GetInstance();
     class'ClientLevelCore'.static.CreateLevelCore(self);
 }
@@ -95,13 +76,6 @@ private function InitializeServer()
         AddToPackageMap("Acedia");
     }
     CheckForGarbage();
-    //  Enforce one copy rule and remember a reference to that copy
-    if (default.selfReference != none)
-    {
-        Destroy();
-        return;
-    }
-    default.selfReference = self;
     //  Launch and setup core Acedia
     _       = class'Global'.static.GetInstance();
     _server = class'ServerGlobal'.static.GetInstance();
@@ -147,7 +121,6 @@ function ServerTraveling(string URL, bool bItems)
         _.memory.Free(votingAdapter);
         votingAdapter = none;
     }
-    default.selfReference = none;
     _.environment.ShutDown();
     if (nextMutator != none) {
     	nextMutator.ServerTraveling(URL, bItems);
