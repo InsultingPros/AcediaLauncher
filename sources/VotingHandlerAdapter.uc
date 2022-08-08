@@ -5,7 +5,7 @@
  *  data from Acedia's game modes.
  *      Requires `GameInfo`'s voting handler to be derived from
  *  `XVotingHandler`, which is satisfied by pretty much every used handler.
- *      Copyright 2021 Anton Tarasenko
+ *      Copyright 2021-2022 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
@@ -109,6 +109,7 @@ public final function InjectIntoVotingHandler()
     local GameMode                                  nextGameMode;
     local XVotingHandler                            votingHandler;
     local array<VotingHandler.MapVoteGameConfig>    newVotingHandlerConfig;
+
     if (votingHandlerReference != none) {
         return;
     }
@@ -139,6 +140,7 @@ private function VotingHandler.MapVoteGameConfig BuildVotingHandlerConfig(
     GameMode gameMode)
 {
     local VotingHandler.MapVoteGameConfig result;
+
     result.gameClass    = _.text.IntoString(gameMode.GetGameTypeClass());
     result.gameName     = _.text.ToColoredString(gameMode.GetTitle());
     result.prefix       = _.text.IntoString(gameMode.GetMapPrefix());
@@ -153,6 +155,7 @@ private function string BuildMutatorString(GameMode gameMode)
     local int           i;
     local string        result;
     local array<Text>   usedMutators;
+
     usedMutators = gameMode.GetIncludedMutators();
     for (i = 0; i < usedMutators.length; i += 1)
     {
@@ -171,6 +174,7 @@ private function string BuildOptionsString(GameMode gameMode)
     local string                nextKey, nextValue;
     local CollectionIterator    iter;
     local HashTable             options;
+
     options = gameMode.GetOptions();
     for (iter = options.Iterate(); !iter.HasFinished(); iter.Next())
     {
@@ -197,6 +201,7 @@ public final function PrepareForServerTravel()
     local string            nextGameClassName;
     local class<GameInfo>   nextGameClass;
     local XVotingHandler    votingHandler;
+
     if (votingHandlerReference == none)     return;
     votingHandler = XVotingHandler(votingHandlerReference.Get());
     if (votingHandler == none)              return;
@@ -259,6 +264,7 @@ public final function GameMode SetupGameModeAfterTravel()
 public final function RestoreVotingHandlerConfigBackup()
 {
     local XVotingHandler votingHandler;
+
     if (votingHandlerReference == none) return;
     votingHandler = XVotingHandler(votingHandlerReference.Get());
     if (votingHandler == none)          return;
@@ -283,8 +289,9 @@ private function GameMode GetConfigFromString(string configName)
 //  KF's numeric one.
 private final function int GetNumericDifficulty(GameMode gameMode)
 {
-    local int i;
-    local string difficulty;
+    local int       i;
+    local string    difficulty;
+
     difficulty = Locs(_.text.IntoString(gameMode.GetDifficulty()));
     for (i = 0; i < default.beginnerSynonyms.length; i += 1)
     {

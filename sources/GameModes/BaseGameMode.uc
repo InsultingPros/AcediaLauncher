@@ -10,7 +10,7 @@
  *          be used based on game info's settings;
  *      3. `Report...()` methods that perform various validation checks
  *           (and log them) on config data.
- *      Copyright 2021 Anton Tarasenko
+ *      Copyright 2021-2022 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
@@ -101,6 +101,7 @@ protected function FromData(HashTable source)
     local int       i;
     local ArrayList nextArray;
     local HashTable nextPair;
+
     if (source == none) {
         return;
     }
@@ -133,6 +134,7 @@ private final function FeatureConfigPair HashTableIntoPair(HashTable source)
 {
     local Text              nextText;
     local FeatureConfigPair result;
+
     if (source == none) {
         return result;
     }
@@ -152,6 +154,7 @@ private final function array<string> DynamicIntoStringArray(ArrayList source)
     local int           i;
     local Text          nextText;
     local array<string> result;
+
     if (source == none) {
         return result;
     }
@@ -168,6 +171,7 @@ protected function array<Text> StringToTextArray(array<string> input)
 {
     local int           i;
     local array<Text>   result;
+
     for (i = 0; i < input.length; i += 1) {
         result[i] = _.text.FromString(input[i]);
     }
@@ -209,8 +213,9 @@ public function Text GetDifficulty()
 public function ReportIncorrectSettings(
     array<Packages.FeatureConfigPair> featuresToEnable)
 {
-    local int i;
+    local int           i;
     local array<string> featureNames, featuresToReplace;
+
     for (i = 0; i < featuresToEnable.length; i += 1) {
         featureNames[i] = string(featuresToEnable[i].featureClass);
     }
@@ -233,6 +238,7 @@ public function ReportIncorrectSettings(
 public function ReportBadMutatorNames()
 {
     local int i;
+
     for (i = 0; i < includeMutator.length; i += 1)
     {
         if (!ValidateServerURLName(includeMutator[i]))
@@ -266,8 +272,9 @@ private function ValidateFeatureArray(
     array<string>   whole,
     string          arrayName)
 {
-    local int i, j;
-    local bool foundItem;
+    local int   i, j;
+    local bool  foundItem;
+
     for (i = 0; i < subset.length; i += 1)
     {
         foundItem = false;
@@ -302,9 +309,10 @@ private function ValidateFeatureArray(
 public function UpdateFeatureArray(
     out array<Packages.FeatureConfigPair> featuresToEnable)
 {
-    local int   i;
-    local Text  newConfigName;
-    local string nextFeatureClassName;
+    local int       i;
+    local Text      newConfigName;
+    local string    nextFeatureClassName;
+
     for (i = 0; i < featuresToEnable.length; i += 1)
     {
         nextFeatureClassName = string(featuresToEnable[i].featureClass);
@@ -334,6 +342,7 @@ public function UpdateFeatureArray(
 private function bool FeatureExcluded(string featureClassName)
 {
     local int i;
+
     for (i = 0; i < excludeFeature.length; i += 1)
     {
         if (excludeFeature[i] ~= featureClassName) {
@@ -346,6 +355,7 @@ private function bool FeatureExcluded(string featureClassName)
 private function Text TryReplacingFeatureConfig(string featureClassName)
 {
     local int i;
+
     for (i = 0; i < includeFeatureAs.length; i += 1)
     {
         if (includeFeatureAs[i].feature ~= featureClassName) {
@@ -358,6 +368,7 @@ private function Text TryReplacingFeatureConfig(string featureClassName)
 private function bool FeatureInIncludedArray(string featureClassName)
 {
     local int i;
+
     for (i = 0; i < includeFeature.length; i += 1)
     {
         if (includeFeature[i] ~= featureClassName) {
@@ -371,6 +382,7 @@ public function array<Text> GetIncludedMutators()
 {
     local int           i;
     local array<string> validatedMutators;
+
     for (i = 0; i < includeMutator.length; i += 1)
     {
         if (ValidateServerURLName(includeMutator[i])) {

@@ -1,7 +1,7 @@
 /**
  *  The only implementation for `BaseGameMode` suitable for standard
  *  killing floor game types.
- *      Copyright 2021 Anton Tarasenko
+ *      Copyright 2021-2022 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
@@ -59,6 +59,7 @@ protected function HashTable ToData()
     local int       i;
     local ArrayList nextArray;
     local HashTable result, nextPair;
+
     result = super.ToData();
     if (result == none) {
         return none;
@@ -86,6 +87,7 @@ protected function FromData(HashTable source)
     local GameOption    nextGameOption;
     local ArrayList     nextArray;
     local HashTable     nextPair;
+
     super.FromData(source);
     if (source == none) {
         return;
@@ -153,6 +155,7 @@ public function Text GetMapPrefix()
 public function ReportBadOptions()
 {
     local int i;
+
     for (i = 0; i < option.length; i += 1)
     {
         if (    !ValidateServerURLName(option[i].key)
@@ -173,6 +176,7 @@ public function HashTable GetOptions()
 {
     local int       i;
     local HashTable result;
+
     result = _.collections.EmptyHashTable();
     for (i = 0; i < option.length; i += 1)
     {

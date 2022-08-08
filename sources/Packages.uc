@@ -72,6 +72,7 @@ private function InitializeServer()
     local LevelCore                 serverCore;
     local GameMode                  currentGameMode;
     local array<FeatureConfigPair>  availableFeatures;
+
     if (clientside) {
         AddToPackageMap("Acedia");
     }
@@ -132,10 +133,13 @@ function ServerTraveling(string URL, bool bItems)
 //  This can lead to serious problems, so such diagnostic check is warranted.
 private function CheckForGarbage()
 {
-    local int leftoverObjectAmount, leftoverActorAmount, leftoverDBRAmount;
+    local int           leftoverObjectAmount;
+    local int           leftoverActorAmount;
+    local int           leftoverDBRAmount;
     local AcediaObject  nextObject;
     local AcediaActor   nextActor;
     local DBRecord      nextRecord;
+
     foreach AllObjects(class'AcediaObject', nextObject) {
         leftoverObjectAmount += 1;
     }
@@ -181,6 +185,7 @@ public final function array<FeatureConfigPair> GetAutoConfigurationInfo()
 private function EnableFeatures(array<FeatureConfigPair> features)
 {
     local int i;
+
     for (i = 0; i < features.length; i += 1)
     {
         if (features[i].featureClass == none)   continue;
@@ -196,6 +201,7 @@ private function EnableFeatures(array<FeatureConfigPair> features)
 private function SetupMutatorSignals()
 {
     local ServerUnrealService service;
+
     service = ServerUnrealService(class'ServerUnrealService'.static.Require());
     onMutateSignal              = Mutator_OnMutate_Signal(
         service.GetSignal(class'Mutator_OnMutate_Signal'));

@@ -1,6 +1,6 @@
 /**
  *  This actor's role is to add Acedia mutator on listen and dedicated servers.
- *      Copyright 2019 Anton Tarasenko
+ *      Copyright 2019-2022 Anton Tarasenko
  *------------------------------------------------------------------------------
  * This file is part of Acedia.
  *
