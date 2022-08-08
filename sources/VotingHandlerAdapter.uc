@@ -23,7 +23,8 @@
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
 class VotingHandlerAdapter extends AcediaObject
-    dependson(VotingHandler);
+    dependson(VotingHandler)
+    config(AcediaLauncherData);
 
 /**
  *      All usage of this object should start with `InjectIntoVotingHandler()`
@@ -73,22 +74,22 @@ var private NativeActorRef                          votingHandlerReference;
 //  otherwise Acedia will alter its config
 var private array<VotingHandler.MapVoteGameConfig>  backupVotingHandlerConfig;
 
-//  Setting default value of this flag to `true` indicates that map switching
-//  just occurred and we need to recover some information from the previous map.
-var private bool    isServerTraveling;
+//  Setting value of this flag to `true` indicates that map switching just
+//  occurred and we need to recover some information from the previous map.
+var private config bool    isServerTraveling;
 //  We should not rely on "VotingHandler" to inform us from which game mode its
 //  selected config option originated after server travel, so we need to
-//  remember it in this default variable before switching maps.
-var private string  targetGameMode;
+//  remember it in this config variable before switching maps.
+var private config string  targetGameMode;
 //  Acedia's game modes intend on supporting difficulty switching, but
 //  `KFGameType` does not support appropriate flags, so we enforce default
 //  difficulty by overwriting default value of its `gameDifficulty` variable.
 //  But to not affect game's configs we must restore old value after new map is
-//  loaded. Store it in default variable for that.
-var private float   storedGameDifficulty;
+//  loaded. Store it in config variable for that.
+var private config float    storedGameDifficulty;
 
 var private LoggerAPI.Definition fatNoXVotingHandler, fatBadGameConfigIndexVH;
-var private LoggerAPI.Definition fatBadGameConfigIndexAdapter; 
+var private LoggerAPI.Definition fatBadGameConfigIndexAdapter;
 
 protected function Finalizer()
 {
@@ -232,11 +233,12 @@ public final function PrepareForServerTravel()
         nextGameClass =
             class<GameInfo>(_.memory.LoadClass_S(nextGameClassName));
     }
-    default.isServerTraveling = true;
-    default.targetGameMode = availableGameModes[pickedVHConfig].ToString();
+    isServerTraveling = true;
+    targetGameMode = availableGameModes[pickedVHConfig].ToString();
     nextGameMode = GetConfigFromString(default.targetGameMode);
-    default.storedGameDifficulty = nextGameClass.default.gameDifficulty;
+    storedGameDifficulty = nextGameClass.default.gameDifficulty;
     nextGameClass.default.gameDifficulty = GetNumericDifficulty(nextGameMode);
+    SaveConfig();
 }
 
 /**
@@ -248,12 +250,12 @@ public final function PrepareForServerTravel()
  */
 public final function GameMode SetupGameModeAfterTravel()
 {
-    if (!default.isServerTraveling) {
+    if (!isServerTraveling) {
         return none;
     }
-    _server.unreal.GetGameType().default.gameDifficulty =
-        default.storedGameDifficulty;
-    default.isServerTraveling = false;
+    _server.unreal.GetGameType().default.gameDifficulty = storedGameDifficulty;
+    isServerTraveling = false;
+    SaveConfig();
     return GetConfigFromString(targetGameMode);
 }
 
