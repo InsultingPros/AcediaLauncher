@@ -103,13 +103,15 @@ private function InitializeServer()
     {
         votingAdapter = VotingHandlerAdapter(
             _.memory.Allocate(class'VotingHandlerAdapter'));
-        votingAdapter.InjectIntoVotingHandler();
         currentGameMode = votingAdapter.SetupGameModeAfterTravel();
         if (currentGameMode != none) {
             currentGameMode.UpdateFeatureArray(availableFeatures);
         }
     }
     EnableFeatures(availableFeatures);
+    if (votingAdapter != none) {
+        votingAdapter.InjectIntoVotingHandler();
+    }
 }
 
 //  "Finalizer"

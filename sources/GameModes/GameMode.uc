@@ -140,7 +140,7 @@ public function Text GetAcronym()
         return _.text.FromString(string(name));
     }
     else {
-        return _.text.FromString(acronym);
+        return _.text.FromFormattedString(acronym);
     }
 }
 

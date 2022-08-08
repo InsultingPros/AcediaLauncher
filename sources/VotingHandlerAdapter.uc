@@ -139,12 +139,23 @@ public final function InjectIntoVotingHandler()
 private function VotingHandler.MapVoteGameConfig BuildVotingHandlerConfig(
     GameMode gameMode)
 {
-    local VotingHandler.MapVoteGameConfig result;
+    local MutableText                       nextColoredName;
+    local VotingHandler.MapVoteGameConfig   result;
 
     result.gameClass    = _.text.IntoString(gameMode.GetGameTypeClass());
-    result.gameName     = _.text.ToColoredString(gameMode.GetTitle());
     result.prefix       = _.text.IntoString(gameMode.GetMapPrefix());
-    result.acronym      = _.text.IntoString(gameMode.GetAcronym());
+    nextColoredName = gameMode
+        .GetTitle()
+        .IntoMutableText()
+        .ChangeDefaultColor(_.color.white);
+    result.gameName     = _.text.IntoColoredString(nextColoredName)
+        $ _.color.GetColorTag(_.color.White);
+    nextColoredName = gameMode
+        .GetAcronym()
+        .IntoMutableText()
+        .ChangeDefaultColor(_.color.white);
+    result.acronym      = _.text.IntoColoredString(nextColoredName)
+        $ _.color.GetColorTag(_.color.White);
     result.mutators     = BuildMutatorString(gameMode);
     result.options      = BuildOptionsString(gameMode);
     return result;
