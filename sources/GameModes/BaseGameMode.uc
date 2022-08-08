@@ -33,6 +33,8 @@ class BaseGameMode extends AcediaConfig
 
 //  Name of the game mode players will see in voting (formatted string)
 var protected config string         title;
+//  Preferable game length (plain string)
+var protected config string         length;
 //  Preferable difficulty level (plain string)
 var protected config string         difficulty;
 //  `Mutator`s to add with this game mode
@@ -63,6 +65,7 @@ protected function HashTable ToData()
 
     result = _.collections.EmptyHashTable();
     result.SetFormattedString(P("title"), title);
+    result.SetString(P("length"), length);
     result.SetString(P("difficulty"), difficulty);
     nextArray = _.collections.EmptyArrayList();
     for (i = 0; i < includeFeature.length; i += 1) {
@@ -105,8 +108,9 @@ protected function FromData(HashTable source)
     if (source == none) {
         return;
     }
-    title =  source.GetFormattedString(P("title"));
-    title =  source.GetString(P("title"));
+    title       = source.GetFormattedString(P("title"));
+    length      = source.GetString(P("length"));
+    difficulty  = source.GetString(P("difficulty"));
     nextArray = source.GetArrayList(P("includeFeature"));
     includeFeature = DynamicIntoStringArray(nextArray);
     _.memory.Free(nextArray);
@@ -193,6 +197,15 @@ public function Text GetGameTypeClass()
 public function Text GetTitle()
 {
     return _.text.FromFormattedString(title);
+}
+
+/**
+ *  @return Specified game length for the game mode.
+ *      Interpretation of this value can depend on each particular game mode.
+ */
+public function Text GetLength()
+{
+    return _.text.FromString(length);
 }
 
 /**

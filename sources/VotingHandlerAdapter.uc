@@ -50,15 +50,6 @@ class VotingHandlerAdapter extends AcediaObject
  *  to read (and forget) from internal state.
  */
 
-//      Aliases are an unnecessary overkill for difficulty names, so just define
-//  them in special `string` arrays.
-//      We accept detect not just these exact words, but any of their prefixes.
-var private const array<string> beginnerSynonyms;
-var private const array<string> normalSynonyms;
-var private const array<string> hardSynonyms;
-var private const array<string> suicidalSynonyms;
-var private const array<string> hoeSynonyms;
-
 //      All available game modes for Acedia, loaded during initialization.
 //      This array is directly produces replacement for `XVotingHandler`'s
 //  `gameConfig` array and records of `availableGameModes` relate to those of
@@ -86,7 +77,15 @@ var private config string  targetGameMode;
 //  difficulty by overwriting default value of its `gameDifficulty` variable.
 //  But to not affect game's configs we must restore old value after new map is
 //  loaded. Store it in config variable for that.
-var private config float    storedGameDifficulty;
+var private config int      storedGameLength;
+
+//      Aliases are an unnecessary overkill for difficulty names, so just define
+//  them in special `string` arrays.
+//      We accept not just these exact words, but any of their prefixes.
+var private const array<string> shortSynonyms;
+var private const array<string> normalSynonyms;
+var private const array<string> longSynonyms;
+var private const array<string> customSynonyms;
 
 var private LoggerAPI.Definition fatNoXVotingHandler, fatBadGameConfigIndexVH;
 var private LoggerAPI.Definition fatBadGameConfigIndexAdapter;
@@ -201,6 +200,7 @@ public final function PrepareForServerTravel()
     local GameMode          nextGameMode;
     local string            nextGameClassName;
     local class<GameInfo>   nextGameClass;
+    local class<KFGameType> nextKFGameType;
     local XVotingHandler    votingHandler;
 
     if (votingHandlerReference == none)     return;
@@ -235,9 +235,15 @@ public final function PrepareForServerTravel()
     }
     isServerTraveling = true;
     targetGameMode = availableGameModes[pickedVHConfig].ToString();
-    nextGameMode = GetConfigFromString(default.targetGameMode);
-    storedGameDifficulty = nextGameClass.default.gameDifficulty;
-    nextGameClass.default.gameDifficulty = GetNumericDifficulty(nextGameMode);
+    nextGameMode = GetConfigFromString(targetGameMode);
+    nextKFGameType = class<KFGameType>(nextGameClass);
+    if (nextKFGameType != none)
+    {
+        storedGameLength = nextKFGameType.default.kfGameLength;
+        nextKFGameType.default.kfGameLength =
+            GetNumericGameLength(nextGameMode);
+    }
+    nextGameClass.static.StaticSaveConfig();
     SaveConfig();
 }
 
@@ -250,11 +256,17 @@ public final function PrepareForServerTravel()
  */
 public final function GameMode SetupGameModeAfterTravel()
 {
+    local KFGameType kfGameType;
+
     if (!isServerTraveling) {
         return none;
     }
-    _server.unreal.GetGameType().default.gameDifficulty = storedGameDifficulty;
+    kfGameType = _server.unreal.GetKFGameType();
+    if (kfGameType != none) {
+        kfGameType.default.kfGameLength = storedGameLength;
+    }
     isServerTraveling = false;
+    _server.unreal.GetGameType().StaticSaveConfig();
     SaveConfig();
     return GetConfigFromString(targetGameMode);
 }
@@ -289,43 +301,37 @@ private function GameMode GetConfigFromString(string configName)
 
 //  Convert `GameMode`'s difficulty's textual representation into
 //  KF's numeric one.
-private final function int GetNumericDifficulty(GameMode gameMode)
+private final function int GetNumericGameLength(BaseGameMode gameMode)
 {
     local int       i;
-    local string    difficulty;
+    local string    length;
 
-    difficulty = Locs(_.text.IntoString(gameMode.GetDifficulty()));
-    for (i = 0; i < default.beginnerSynonyms.length; i += 1)
+    length = Locs(_.text.IntoString(gameMode.GetLength()));
+    for (i = 0; i < default.shortSynonyms.length; i += 1)
     {
-        if (IsPrefixOf(difficulty, default.beginnerSynonyms[i])) {
-            return 1;
+        if (IsPrefixOf(length, default.shortSynonyms[i])) {
+            return 0;
         }
     }
     for (i = 0; i < default.normalSynonyms.length; i += 1)
     {
-        if (IsPrefixOf(difficulty, default.normalSynonyms[i])) {
+        if (IsPrefixOf(length, default.normalSynonyms[i])) {
+            return 1;
+        }
+    }
+    for (i = 0; i < default.longSynonyms.length; i += 1)
+    {
+        if (IsPrefixOf(length, default.longSynonyms[i])) {
             return 2;
         }
     }
-    for (i = 0; i < default.hardSynonyms.length; i += 1)
+    for (i = 0; i < default.customSynonyms.length; i += 1)
     {
-        if (IsPrefixOf(difficulty, default.hardSynonyms[i])) {
-            return 4;
+        if (IsPrefixOf(length, default.customSynonyms[i])) {
+            return 3;
         }
     }
-    for (i = 0; i < default.suicidalSynonyms.length; i += 1)
-    {
-        if (IsPrefixOf(difficulty, default.suicidalSynonyms[i])) {
-            return 5;
-        }
-    }
-    for (i = 0; i < default.hoeSynonyms.length; i += 1)
-    {
-        if (IsPrefixOf(difficulty, default.hoeSynonyms[i])) {
-            return 7;
-        }
-    }
-    return int(difficulty);
+    return 3;
 }
 
 protected final static function bool IsPrefixOf(string prefix, string value)
@@ -335,21 +341,12 @@ protected final static function bool IsPrefixOf(string prefix, string value)
 
 defaultproperties
 {
-    beginnerSynonyms(0) = "easy"
-    beginnerSynonyms(1) = "beginer"
-    beginnerSynonyms(2) = "beginner"
-    beginnerSynonyms(3) = "begginer"
-    beginnerSynonyms(4) = "begginner"
-    normalSynonyms(0)   = "regular"
-    normalSynonyms(1)   = "default"
-    normalSynonyms(2)   = "normal"
-    hardSynonyms(0)     = "harder" // "hard" is prefix of this, so it will count
-    hardSynonyms(1)     = "difficult"
-    suicidalSynonyms(0) = "suicidal"
-    hoeSynonyms(0)      = "hellonearth"
-    hoeSynonyms(1)      = "hellon earth"
-    hoeSynonyms(2)      = "hell onearth"
-    hoeSynonyms(3)      = "hoe"
+    shortSynonyms(0)    = "short"
+    normalSynonyms(0)   = "normal"
+    normalSynonyms(1)   = "medium"
+    normalSynonyms(2)   = "regular"
+    longSynonyms(0)     = "long"
+    customSynonyms(0)   = "custom"
     fatNoXVotingHandler             = (l=LOG_Fatal,m="`XVotingHandler` class is missing. Make sure your server setup supports Acedia's game modes (by used voting handler derived from `XVotingHandler`).")
     fatBadGameConfigIndexVH         = (l=LOG_Fatal,m="`XVotingHandler`'s `currentGameConfig` variable value of %1 is out-of-bounds for `XVotingHandler.gameConfig` of length %2. Report this issue.")
     fatBadGameConfigIndexAdapter    = (l=LOG_Fatal,m="`XVotingHandler`'s `currentGameConfig` variable value of %1 is out-of-bounds for `VHAdapter` of length %2. Report this issue.")
