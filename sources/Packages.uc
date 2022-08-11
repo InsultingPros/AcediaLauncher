@@ -20,14 +20,14 @@
  * along with Acedia.  If not, see <https://www.gnu.org/licenses/>.
  */
 class Packages extends Mutator
-    config(Acedia);
+    config(AcediaLauncher);
 
 //  Acedia's reference to a `Global` object.
 var private Global          _;
 var private ServerGlobal    _server;
 var private ClientGlobal    _client;
 
-//  Load Acedia on the client as well?
+//  Load Acedia on the client as well? DON NOT TOUCH THIS
 var private config bool clientside;
 //  Array of predefined services that must be started along with Acedia mutator.
 var private config array<string> package;
@@ -74,7 +74,7 @@ private function InitializeServer()
     local array<FeatureConfigPair>  availableFeatures;
 
     if (clientside) {
-        AddToPackageMap("Acedia");
+        AddToPackageMap("AcediaLauncher");
     }
     CheckForGarbage();
     //  Launch and setup core Acedia
