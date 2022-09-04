@@ -127,6 +127,10 @@ public final function InjectIntoVotingHandler()
         nextGameMode = GameMode(class'GameMode'.static
             .GetConfigInstance(availableGameModes[i]));
         newVotingHandlerConfig[i] = BuildVotingHandlerConfig(nextGameMode);
+        //  Setup proper game mode index
+        if (availableGameModes[i].ToString() == targetGameMode) {
+            votingHandler.currentGameConfig = i;
+        }
         //  Report omitted mutators / server options
         nextGameMode.ReportBadMutatorNames();
         nextGameMode.ReportBadOptions();
@@ -295,6 +299,7 @@ public final function RestoreVotingHandlerConfigBackup()
 
     votingHandler.gameConfig            = backupVotingHandlerConfig;
     votingHandler.default.gameConfig    = backupVotingHandlerConfig;
+    votingHandler.currentGameConfig     = 0;
     votingHandler.SaveConfig();
 }
 
