@@ -146,7 +146,7 @@ public function Text GetAcronym()
 
 public function Text GetMapPrefix()
 {
-    if (acronym == "") {
+    if (mapPrefix == "") {
         return _.text.FromString("KF-");
     }
     else {
