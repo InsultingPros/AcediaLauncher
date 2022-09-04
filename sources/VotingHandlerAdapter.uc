@@ -85,7 +85,6 @@ var private config int      storedGameLength;
 var private const array<string> shortSynonyms;
 var private const array<string> normalSynonyms;
 var private const array<string> longSynonyms;
-var private const array<string> customSynonyms;
 
 var private LoggerAPI.Definition fatNoXVotingHandler, fatBadGameConfigIndexVH;
 var private LoggerAPI.Definition fatBadGameConfigIndexAdapter;
@@ -318,6 +317,11 @@ private final function int GetNumericGameLength(BaseGameMode gameMode)
     local string    length;
 
     length = Locs(_.text.IntoString(gameMode.GetLength()));
+    //  Custom game is a bad guess for empty game length setting, since it can
+    //  lead to behavior unexpecte by users
+    if (length == "") {
+        return 2;
+    }
     for (i = 0; i < default.shortSynonyms.length; i += 1)
     {
         if (IsPrefixOf(length, default.shortSynonyms[i])) {
@@ -336,12 +340,6 @@ private final function int GetNumericGameLength(BaseGameMode gameMode)
             return 2;
         }
     }
-    for (i = 0; i < default.customSynonyms.length; i += 1)
-    {
-        if (IsPrefixOf(length, default.customSynonyms[i])) {
-            return 3;
-        }
-    }
     return 3;
 }
 
@@ -357,7 +355,6 @@ defaultproperties
     normalSynonyms(1)   = "medium"
     normalSynonyms(2)   = "regular"
     longSynonyms(0)     = "long"
-    customSynonyms(0)   = "custom"
     fatNoXVotingHandler             = (l=LOG_Fatal,m="`XVotingHandler` class is missing. Make sure your server setup supports Acedia's game modes (by used voting handler derived from `XVotingHandler`).")
     fatBadGameConfigIndexVH         = (l=LOG_Fatal,m="`XVotingHandler`'s `currentGameConfig` variable value of %1 is out-of-bounds for `XVotingHandler.gameConfig` of length %2. Report this issue.")
     fatBadGameConfigIndexAdapter    = (l=LOG_Fatal,m="`XVotingHandler`'s `currentGameConfig` variable value of %1 is out-of-bounds for `VHAdapter` of length %2. Report this issue.")
